@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin Dashboard</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f9f9f9; margin: 0; }
+    .container { display: flex; }
+    .sidebar {
+      width: 260px; background: #fff; padding: 20px; border-radius: 10px; margin: 20px;
+      box-shadow: 0 0 10px #ccc; height: fit-content;
+    }
+    .main { flex: 1; margin: 20px; }
+    .admin-info { margin-bottom: 20px; }
+    .admin-info h3 { margin: 0 0 10px 0; }
+    .section { background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px #ccc; margin-bottom: 20px; }
+    input, textarea, select { width: 100%; padding: 10px; margin: 5px 0 15px; border-radius: 5px; border: 1px solid #ccc; }
+    button { padding: 10px 20px; background: #0b74de; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th { background: #eee; }
+    .toggle-btn { margin-bottom: 10px; }
+    .hidden { display: none; }
+    .filter-input {
+      width: 50%;
+      margin-bottom: 10px;
+      padding: 8px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="sidebar">
+      <div class="admin-info" id="adminInfo">
+        <h3>Admin Info</h3>
+        <p><b>Name:</b> <span id="adminName"></span></p>
+        <p><b>Email:</b> <span id="adminEmail"></span></p>
+        <p><b>Contact:</b> <span id="adminContact"></span></p>
+        <button onclick="showUpdateForm()">Update Info</button>
+        <button onclick="logout()">Logout</button>
+      </div>
+      <form id="updateForm" class="hidden">
+        <h3>Update Info</h3>
+        <input type="text" name="name" placeholder="Full Name" required />
+        <input type="email" name="email" placeholder="Email" required />
+        <input type="text" name="contact" placeholder="Contact" required />
+        <button type="submit">Save</button>
+        <button type="button" onclick="hideUpdateForm()">Cancel</button>
+      </form>
+    </div>
+    <div class="main">
+      <div class="section">
+        <button class="toggle-btn" onclick="toggleTables()">Show Orders</button>
+        <form id="productForm">
+          <h3>Upload New Product</h3>
+          <input type="text" name="name" placeholder="Product Name" required />
+          <input type="number" name="amount" placeholder="Amount (Tsh)" required />
+          <textarea name="description" placeholder="Description" required></textarea>
+          <input type="file" name="media" accept="image/*,video/*" required />
+          <button type="submit">Upload</button>
+        </form>
+      </div>
+
+      <div class="section hidden" id="editProductSection">
+        <h3>Edit Product</h3>
+        <form id="editProductForm">
+          <input type="hidden" name="id" />
+          <input type="text" name="name" placeholder="Product Name" required />
+          <input type="number" name="amount" placeholder="Amount (Tsh)" required />
+          <textarea name="description" placeholder="Description" required></textarea>
+          <button type="submit">Save Changes</button>
+          <button type="button" onclick="document.getElementById('editProductSection').classList.add('hidden')">Cancel</button>
+        </form>
+      </div>
+
+      <div class="section" id="productsSection">
+        <h3>Uploaded Products</h3>
+        <input
+          type="text"
+          id="productFilter"
+          class="filter-input"
+          placeholder="Filter products by name, amount, description..."
+          oninput="filterProducts()"
+        />
+        <table id="productTable">
+          <thead>
+            <tr>
+              <th>Image/Video</th>
+              <th>Name</th>
+              <th>Amount</th>
+              <th>Description</th>
+              <th>Uploaded At</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="productsBody"></tbody>
+        </table>
+      </div>
+
+      <div class="section hidden" id="ordersSection">
+        <h3>Customer Orders</h3>
+        <input
+          type="text"
+          id="orderFilter"
+          class="filter-input"
+          placeholder="Filter orders by customer, email, product, status..."
+          oninput="filterOrders()"
+        />
+        <table id="orderTable">
+          <thead>
+            <tr>
+              <th>Customer</th>
+              <th>Email</th>
+              <th>Product</th>
+              <th>Contact</th>
+              <th>Quantity</th>
+              <th>Total Cost</th>
+              <th>Date</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="ordersBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let admin = {};
+    let currentEditId = null;
+    let productsData = [];
+    let ordersData = [];
+
+    async function fetchAdminInfo() {
+      try {
+        const res = await fetch('/getadmin');
+        if (!res.ok) throw new Error('Not logged in');
+        admin = await res.json();
+        renderAdminInfo();
+      } catch (err) {
+        alert('Session expired. Redirecting to login.');
+        window.location.href = '/adminlogin.html';
+      }
+    }
+
+    function renderAdminInfo() {
+      document.getElementById('adminName').textContent = admin.name;
+      document.getElementById('adminEmail').textContent = admin.email;
+      document.getElementById('adminContact').textContent = admin.contact;
+    }
+
+    function showUpdateForm() {
+      document.getElementById('adminInfo').classList.add('hidden');
+      document.getElementById('updateForm').classList.remove('hidden');
+      document.querySelector('#updateForm [name="name"]').value = admin.name;
+      document.querySelector('#updateForm [name="email"]').value = admin.email;
+      document.querySelector('#updateForm [name="contact"]').value = admin.contact;
+    }
+
+    function hideUpdateForm() {
+      document.getElementById('updateForm').classList.add('hidden');
+      document.getElementById('adminInfo').classList.remove('hidden');
+    }
+
+    document.getElementById('updateForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const updated = {
+        name: this.name.value,
+        email: this.email.value,
+        contact: this.contact.value
+      };
+      try {
+        const res = await fetch('/updateadmin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updated)
+        });
+        if (!res.ok) throw new Error('Update failed');
+        admin = await res.json();
+        renderAdminInfo();
+        hideUpdateForm();
+        alert('Admin info updated');
+      } catch (err) {
+        alert('Error updating info');
+      }
+    });
+
+    async function logout() {
+      await fetch('/logout');
+      window.location.href = '/adminlogin.html';
+    }
+
+    // Upload product
+    document.getElementById('productForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+      const res = await fetch('/uploadproduct', { method: 'POST', body: formData });
+      if (res.redirected) window.location.reload();
+      else alert('Upload failed');
+    });
+
+    // Fetch and display products
+    async function fetchProducts() {
+      const res = await fetch('/products');
+      productsData = await res.json();
+      renderProducts(productsData);
+    }
+    function renderProducts(products) {
+      const body = document.getElementById('productsBody');
+      body.innerHTML = '';
+      products.forEach(p => {
+        body.innerHTML += `
+          <tr>
+            <td>${p.url.match(/.(mp4|webm|ogg)$/i) ? `<video src="${p.url}" width="60" controls></video>` : `<img src="${p.url}" width="60"/>`}</td>
+            <td>${p.name}</td>
+            <td>${p.amount}</td>
+            <td>${p.description}</td>
+            <td>${new Date(p.createdAt).toLocaleDateString()}</td>
+            <td>
+              <button onclick="deleteProduct('${p._id}')">Delete</button>
+              <button onclick="editProduct('${p._id}', '${p.name}', '${p.amount}', \`${p.description.replace(/`/g, '\\`')}\`)">Edit</button>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    async function deleteProduct(id) {
+      try {
+        const res = await fetch('/deleteproduct/' + id, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Failed to delete product');
+        await fetchProducts();
+      } catch {
+        alert('Error deleting product');
+      }
+    }
+
+    function editProduct(id, name, amount, description) {
+      document.getElementById('editProductSection').classList.remove('hidden');
+      const form = document.getElementById('editProductForm');
+      form.id.value = id;
+      form.name.value = name;
+      form.amount.value = amount;
+      form.description.value = description;
+    }
+
+    document.getElementById('editProductForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const updated = {
+        id: this.id.value,
+        name: this.name.value,
+        amount: this.amount.value,
+        description: this.description.value
+      };
+      try {
+        const res = await fetch('/updateproduct', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updated)
+        });
+        if (!res.ok) throw new Error('Failed to update');
+        await fetchProducts();
+        document.getElementById('editProductSection').classList.add('hidden');
+      } catch {
+        alert('Failed to update product');
+      }
+    });
+
+    // Fetch and display orders
+    async function fetchOrders() {
+      const res = await fetch('/orders');
+      ordersData = await res.json();
+      renderOrders(ordersData);
+    }
+    function renderOrders(orders) {
+      const body = document.getElementById('ordersBody');
+      body.innerHTML = '';
+      orders.forEach(o => {
+        body.innerHTML += `
+          <tr>
+            <td>${o.name}</td>
+            <td>${o.email}</td>
+            <td>${o.product}</td>
+            <td>${o.contact}</td>
+            <td>${o.quantity || 1}</td>
+            <td>${o.amount}</td>
+            <td>${new Date(o.createdAt).toLocaleDateString()}</td>
+            <td>${o.status || 'Pending'}</td>
+            <td>
+              <button onclick="approveOrder('${o._id}', '${o.email}')">Approve</button>
+              <button onclick="deleteOrder('${o._id}')">Delete</button>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    async function approveOrder(id, email) {
+      try {
+        const res = await fetch('/approveorder/' + id, { method: 'POST' });
+        if (!res.ok) throw new Error('Failed to approve');
+        await fetchOrders();
+        alert('Order approved and customer notified.');
+      } catch {
+        alert('Failed to approve order');
+      }
+    }
+
+    async function deleteOrder(id) {
+      try {
+        const res = await fetch('/deleteorder/' + id, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Failed to delete order');
+        await fetchOrders();
+      } catch {
+        alert('Failed to delete order');
+      }
+    }
+
+    function toggleTables() {
+      const prod = document.getElementById('productsSection');
+      const ord = document.getElementById('ordersSection');
+      if (prod.classList.contains('hidden')) {
+        prod.classList.remove('hidden');
+        ord.classList.add('hidden');
+        document.querySelector('.toggle-btn').textContent = 'Show Orders';
+      } else {
+        prod.classList.add('hidden');
+        ord.classList.remove('hidden');
+        fetchOrders();
+        document.querySelector('.toggle-btn').textContent = 'Show Products';
+      }
+    }
+
+    // Filter functions
+
+    function filterProducts() {
+      const filter = document.getElementById('productFilter').value.toLowerCase();
+      const filtered = productsData.filter(p =>
+        p.name.toLowerCase().includes(filter) ||
+        p.amount.toString().includes(filter) ||
+        p.description.toLowerCase().includes(filter)
+      );
+      renderProducts(filtered);
+    }
+
+    function filterOrders() {
+      const filter = document.getElementById('orderFilter').value.toLowerCase();
+      const filtered = ordersData.filter(o =>
+        o.name.toLowerCase().includes(filter) ||
+        o.email.toLowerCase().includes(filter) ||
+        o.product.toLowerCase().includes(filter) ||
+        (o.status && o.status.toLowerCase().includes(filter))
+      );
+      renderOrders(filtered);
+    }
+
+    fetchAdminInfo();
+    fetchProducts();
+  </script>
+</body>
+</html>

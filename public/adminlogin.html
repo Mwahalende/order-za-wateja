@@ -1,0 +1,73 @@
+<!-- public/adminlogin.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin Login</title>
+  <style>
+    body { font-family: Arial; background: #f2f2f2; text-align: center; padding: 20px; }
+    form { max-width: 400px; margin: auto; padding: 20px; background: white; border-radius: 10px; }
+    input, button { padding: 10px; width: 100%; margin: 10px 0; border-radius: 5px; }
+    button { background-color: #28a745; color: white; border: none; }
+  </style>
+</head>
+<body>
+  <h2>Admin Login</h2>
+  <form id="adminLoginForm">
+    <input type="email" name="email" placeholder="Email" required />
+    <input type="password" name="password" placeholder="Password" required />
+    <button type="submit">Login</button>
+    <a href="/adminregister.html" style="display:block;margin-top:10px;">Register</a>
+    <a href="#" id="showForgot" style="display:block;text-align:right;font-size:0.9em;">Forgot Password?</a>
+  </form>
+  <form id="forgotForm" style="display:none;">
+    <input type="email" name="email" placeholder="Enter your admin email" required />
+    <button type="submit">Reset Password</button>
+    <p class="error" id="forgotMsg"></p>
+    <a href="#" id="backToLogin" style="display:block;text-align:right;font-size:0.9em;">Back to Login</a>
+  </form>
+  <script>
+    document.getElementById('adminLoginForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const form = e.target;
+      const data = {
+        email: form.email.value.trim(),
+        password: form.password.value
+      };
+      const res = await fetch('/adminlogin', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(data)
+      });
+      if (res.redirected) {
+        window.location.href = res.url;
+      } else {
+        alert('Login failed.');
+      }
+    });
+    document.getElementById('showForgot').onclick = function(e) {
+      e.preventDefault();
+      document.getElementById('adminLoginForm').style.display = 'none';
+      document.getElementById('forgotForm').style.display = 'block';
+    };
+    document.getElementById('backToLogin').onclick = function(e) {
+      e.preventDefault();
+      document.getElementById('forgotForm').style.display = 'none';
+      document.getElementById('adminLoginForm').style.display = 'block';
+    };
+    document.getElementById('forgotForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const email = e.target.email.value.trim();
+      const msg = document.getElementById('forgotMsg');
+      msg.textContent = '';
+      const res = await fetch('/admin-forgot-password', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({email})
+      });
+      const result = await res.json();
+      msg.textContent = result.message || (result.success ? 'Check your email for new password.' : 'Failed.');
+    });
+  </script>
+</body>
+</html>

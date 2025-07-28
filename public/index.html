@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>XIN Agricultural Investment</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      --bg: #ffffff;
+      --text: #000000;
+      --card-bg: #f9f9f9;
+      --modal-bg: #ffffff;
+      --primary: #28a745;
+      --btn-text: #ffffff;
+      --input-bg: #f0f0f0;
+      --shadow: rgba(0, 0, 0, 0.1);
+      --input-border: #ccc;
+      --link-color: var(--primary);
+    }
+
+    [data-theme='dark'] {
+      --bg: #121212;
+      --text: #f0f0f0;
+      --card-bg: #1e1e1e;
+      --modal-bg: #2a2a2a;
+      --primary: #4caf50;
+      --btn-text: #ffffff;
+      --input-bg: #333;
+      --shadow: rgba(255, 255, 255, 0.05);
+      --input-border: #555;
+      --link-color: var(--primary);
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 0;
+    }
+
+    h1 {
+      background-color: var(--primary);
+      color: white;
+      padding: 40px 20px;
+      margin: 0;
+      text-align: center;
+      font-size: 1.8em;
+      user-select: none;
+    }
+
+    .theme-toggle {
+      position: fixed;
+      top: 15px;
+      right: 15px;
+      background: var(--card-bg);
+      color: var(--text);
+      border: 1px solid var(--input-border);
+      padding: 8px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      z-index: 200;
+      user-select: none;
+      font-weight: 600;
+      transition: background 0.3s, color 0.3s;
+    }
+    .theme-toggle:hover {
+      background: var(--primary);
+      color: var(--btn-text);
+      border-color: var(--primary);
+    }
+
+    #filterContainer {
+      max-width: 600px;
+      margin: 20px auto 10px;
+      padding: 0 20px;
+      display: flex;
+      justify-content: center;
+    }
+
+    #filterInput {
+      width: 100%;
+      max-width: 400px;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid var(--input-border);
+      background: var(--input-bg);
+      color: var(--text);
+      font-size: 1em;
+      box-sizing: border-box;
+      transition: border-color 0.3s;
+    }
+
+    #filterInput:focus {
+      border-color: var(--primary);
+      outline: none;
+    }
+
+    #products {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+      padding: 0 20px 40px;
+      max-width: 1200px;
+      margin: 0 auto 60px;
+      box-sizing: border-box;
+    }
+
+    .product-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 2px 8px var(--shadow);
+      text-align: center;
+      transition: transform 0.2s;
+      user-select: none;
+    }
+
+    .product-card:hover {
+      transform: translateY(-5px);
+    }
+
+    .product-card img,
+    .product-card video {
+      width: 100%;
+      max-height: 280px;
+      object-fit: cover;
+      border-radius: 10px;
+      margin-bottom: 10px;
+    }
+
+    .product-card h3 {
+      margin: 10px 0 6px;
+      font-size: 1.25em;
+    }
+
+    .product-card p {
+      margin: 4px 0;
+      font-size: 0.95em;
+    }
+
+    button {
+      background: var(--primary);
+      color: var(--btn-text);
+      border: none;
+      padding: 10px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 12px;
+      width: 100%;
+      font-size: 1em;
+      transition: background 0.3s;
+    }
+
+    button:hover {
+      background: #1e7e34;
+    }
+
+    .error {
+      color: #e74c3c;
+      font-size: 0.9em;
+    }
+
+    #authModal,
+    #orderModal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 100;
+    }
+
+    #authModal > div,
+    #orderModal > div {
+      background: var(--modal-bg);
+      color: var(--text);
+      max-width: 400px;
+      margin: 80px auto;
+      padding: 24px;
+      border-radius: 12px;
+      position: relative;
+      box-sizing: border-box;
+    }
+
+    .close-btn {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      font-size: 1.5em;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      border-radius: 6px;
+      margin: 8px 0;
+      border: 1px solid var(--input-border);
+      background: var(--input-bg);
+      color: var(--text);
+      font-size: 1em;
+      box-sizing: border-box;
+      transition: border-color 0.3s;
+    }
+
+    input:focus {
+      border-color: var(--primary);
+      outline: none;
+    }
+
+    a {
+      color: var(--link-color);
+      text-decoration: none;
+      font-size: 0.9em;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+
+  </style>
+</head>
+<body data-theme="light">
+  <button class="theme-toggle" style="width: 200px;" onclick="toggleTheme()">🌓 Theme</button>
+  <h1>XIN AGRICULTURAL INVESTMENT ONLINE ORDER SYSTEM</h1>
+
+  <div id="filterContainer">
+    <input
+      type="text"
+      id="filterInput"
+      placeholder="Search products by name..."
+      aria-label="Search products"
+      autocomplete="off"
+    />
+  </div>
+
+  <div id="products" aria-live="polite"></div>
+
+  <!-- Auth Modal -->
+  <div id="authModal" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+    <div>
+      <span class="close-btn" onclick="closeAuthModal()" aria-label="Close">×</span>
+      <div id="authForms">
+        <form id="loginForm" aria-labelledby="loginTitle">
+          <h3 id="loginTitle">Login</h3>
+          <input type="email" name="email" placeholder="Email" required autocomplete="username" />
+          <input type="password" name="password" placeholder="Password" required autocomplete="current-password" />
+          <button type="submit">Login</button>
+          <p class="error" id="loginError" role="alert"></p>
+          <a href="#" onclick="showRegisterForm();return false;">Register</a>
+        </form>
+        <form id="registerForm" style="display:none;" aria-labelledby="registerTitle">
+          <h3 id="registerTitle">Register</h3>
+          <input type="text" name="name" placeholder="Full Name" required autocomplete="name" />
+          <input type="email" name="email" placeholder="Email" required autocomplete="email" />
+          <input type="text" name="contact" placeholder="Phone Number" required autocomplete="tel" />
+          <input type="password" name="password" placeholder="Password (8+ letters/numbers)" required autocomplete="new-password" />
+          <button type="submit">Register</button>
+          <p class="error" id="registerError" role="alert"></p>
+          <a href="#" onclick="showLoginForm();return false;">Back to Login</a>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Order Modal -->
+  <div id="orderModal" role="dialog" aria-modal="true" aria-labelledby="orderTitle">
+    <div>
+      <span class="close-btn" onclick="closeOrderModal()" aria-label="Close">×</span>
+      <form id="orderForm" aria-describedby="orderDesc">
+        <h3 id="orderTitle">Place Order</h3>
+        <label for="orderProduct">Product</label>
+        <input type="text" id="orderProduct" readonly />
+        <label for="orderQty">Quantity</label>
+        <input type="number" id="orderQty" min="1" value="1" required />
+        <label for="orderTotal">Total Cost</label>
+        <input type="text" id="orderTotal" readonly />
+        <p class="error" id="qtyAlert" style="display:none;">Please enter a valid quantity.</p>
+        <button type="submit" id="orderSubmitBtn">Complete</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let products = [];
+    let filteredProducts = [];
+    let loggedInUser = null;
+    let currentProduct = null;
+
+    function toggleTheme() {
+      const body = document.body;
+      const current = body.getAttribute("data-theme");
+      body.setAttribute("data-theme", current === "dark" ? "light" : "dark");
+    }
+
+    async function loadProducts() {
+      try {
+        const res = await fetch('/products');
+        products = await res.json();
+        filteredProducts = products;
+        displayProducts(filteredProducts);
+      } catch (e) {
+        alert('Failed to load products.');
+      }
+    }
+
+    function displayProducts(items) {
+      const container = document.getElementById('products');
+      container.innerHTML = '';
+      if (!items.length) {
+        container.innerHTML = '<p>No products found.</p>';
+        return;
+      }
+      items.forEach(p => {
+        container.innerHTML += `
+          <div class="product-card" tabindex="0" aria-label="Product: ${p.name}, Price: Tsh ${p.amount}">
+            ${p.url.match(/\.(mp4|webm|ogg)$/i)
+              ? `<video src="${p.url}" controls></video>`
+              : `<img src="${p.url}" alt="${p.name}" />`}
+            <h3>${p.name}</h3>
+            <p>Price: Tsh ${p.amount}</p>
+            <p>${p.description}</p>
+            <button onclick="placeOrder('${p._id}')">Place Order</button>
+          </div>
+        `;
+      });
+    }
+
+    function showRegisterForm() {
+      document.getElementById('loginForm').style.display = 'none';
+      document.getElementById('registerForm').style.display = 'block';
+      clearErrors();
+    }
+
+    function showLoginForm() {
+      document.getElementById('registerForm').style.display = 'none';
+      document.getElementById('loginForm').style.display = 'block';
+      clearErrors();
+    }
+
+    function clearErrors() {
+      document.getElementById('loginError').textContent = '';
+      document.getElementById('registerError').textContent = '';
+    }
+
+    function closeAuthModal() {
+      document.getElementById('authModal').style.display = 'none';
+      clearErrors();
+    }
+
+    function closeOrderModal() {
+      document.getElementById('orderModal').style.display = 'none';
+    }
+
+    function placeOrder(id) {
+      if (!loggedInUser) {
+        document.getElementById('authModal').style.display = 'block';
+        showLoginForm();
+        currentProduct = id;
+        return;
+      }
+      openOrderModal(id);
+    }
+
+    function openOrderModal(id) {
+      const prod = products.find(p => p._id === id);
+      if (!prod) return;
+      currentProduct = prod;
+      document.getElementById('orderProduct').value = prod.name;
+      document.getElementById('orderQty').value = 1;
+      document.getElementById('orderTotal').value = prod.amount;
+      document.getElementById('qtyAlert').style.display = 'none';
+      document.getElementById('orderModal').style.display = 'block';
+      document.getElementById('orderSubmitBtn').disabled = false;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadProducts();
+
+      const filterInput = document.getElementById('filterInput');
+      filterInput.addEventListener('input', () => {
+        const query = filterInput.value.trim().toLowerCase();
+        filteredProducts = products.filter(p => p.name.toLowerCase().includes(query));
+        displayProducts(filteredProducts);
+      });
+
+      document.getElementById('orderQty').oninput = function () {
+        const qty = +this.value;
+        if (!qty || qty < 1) {
+          document.getElementById('qtyAlert').style.display = 'block';
+          document.getElementById('orderTotal').value = '';
+          document.getElementById('orderSubmitBtn').disabled = true;
+        } else {
+          document.getElementById('qtyAlert').style.display = 'none';
+          document.getElementById('orderTotal').value = currentProduct.amount * qty;
+          document.getElementById('orderSubmitBtn').disabled = false;
+        }
+      };
+
+      document.getElementById('orderForm').onsubmit = async function (e) {
+        e.preventDefault();
+        const qty = +document.getElementById('orderQty').value;
+        if (!qty || qty < 1) return;
+
+        const res = await fetch('/placeorder', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            product: currentProduct.name,
+            amount: currentProduct.amount * qty,
+            quantity: qty,
+            email: loggedInUser.email,
+            contact: loggedInUser.contact
+          })
+        });
+        const result = await res.json();
+        alert(result.message || 'Order placed!');
+        closeOrderModal();
+      };
+
+      document.getElementById('loginForm').onsubmit = async function (e) {
+        e.preventDefault();
+        const form = e.target;
+        const res = await fetch('/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: form.email.value.trim(),
+            password: form.password.value
+          })
+        });
+        const result = await res.json();
+        if (result.success) {
+          loggedInUser = result.user;
+          closeAuthModal();
+          if (currentProduct && typeof currentProduct === 'string') {
+            openOrderModal(currentProduct);
+          }
+        } else {
+          document.getElementById('loginError').textContent = result.message || 'Login failed.';
+        }
+      };
+
+      document.getElementById('registerForm').onsubmit = async function (e) {
+        e.preventDefault();
+        const form = e.target;
+        const res = await fetch('/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: form.name.value.trim(),
+            email: form.email.value.trim(),
+            contact: form.contact.value.trim(),
+            password: form.password.value
+          })
+        });
+        const result = await res.json();
+        if (result.success) {
+          alert('Registration successful! Please login.');
+          showLoginForm();
+        } else {
+          document.getElementById('registerError').textContent = result.message || 'Registration failed.';
+        }
+      };
+    });
+  </script>
+</body>
+</html>

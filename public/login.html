@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Customer Login</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background: #fefefe; }
+    form { max-width: 400px; margin: 30px auto; background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px #ccc; }
+    input, button { width: 100%; padding: 10px; margin: 10px 0; border-radius: 5px; border: 1px solid #ccc; }
+    button { background-color: #007bff; color: white; border: none; }
+    .error { color: red; font-size: 0.9em; }
+  </style>
+</head>
+<body>
+  <h2 style="text-align:center;">Customer Login</h2>
+  <form id="loginForm">
+    <input type="email" name="email" placeholder="Email Address" required />
+    <input type="password" name="password" placeholder="Password" required />
+    <button type="submit">Login</button>
+    <p class="error" id="errorMsg"></p>
+    <a href="/register.html" style="display:block;text-align:right;font-size:0.9em;">Register</a>
+    <a href="#" id="showForgot" style="display:block;text-align:right;font-size:0.9em;">Forgot Password?</a>
+  </form>
+
+  <form id="forgotForm" style="display:none;">
+    <input type="email" name="email" placeholder="Enter your email" required />
+    <button type="submit">Reset Password</button>
+    <p class="error" id="forgotMsg"></p>
+    <a href="#" id="backToLogin" style="display:block;text-align:right;font-size:0.9em;">Back to Login</a>
+  </form>
+
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const form = e.target;
+      const email = form.email.value.trim();
+      const password = form.password.value;
+
+      const errorEl = document.getElementById('errorMsg');
+      errorEl.textContent = '';
+
+      const res = await fetch('/login', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({email, password})
+      });
+      const result = await res.json();
+      if(result.success){
+        alert('Login successful!');
+        // TODO: Save session/token
+        window.location.href = '/index.html';
+      } else {
+        errorEl.textContent = result.message || 'Login failed.';
+      }
+    });
+
+    document.getElementById('showForgot').onclick = function(e) {
+      e.preventDefault();
+      document.getElementById('loginForm').style.display = 'none';
+      document.getElementById('forgotForm').style.display = 'block';
+    };
+    document.getElementById('backToLogin').onclick = function(e) {
+      e.preventDefault();
+      document.getElementById('forgotForm').style.display = 'none';
+      document.getElementById('loginForm').style.display = 'block';
+    };
+    document.getElementById('forgotForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const email = e.target.email.value.trim();
+      const msg = document.getElementById('forgotMsg');
+      msg.textContent = '';
+      const res = await fetch('/user-forgot-password', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({email})
+      });
+      const result = await res.json();
+      msg.textContent = result.message || (result.success ? 'Check your email for new password.' : 'Failed.');
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,137 @@
+<!-- public/adminregister.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin Register</title>
+  <style>
+    body { font-family: Arial; background: #f7f7f7; padding: 20px; text-align: center; }
+    form { max-width: 400px; margin: auto; padding: 20px; background: #fff; border-radius: 10px; }
+    input { width: 100%; padding: 10px; margin: 10px 0; border-radius: 5px; border: 1px solid #ccc; }
+    button { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 5px; }
+    .valid { border-color: #28a745; }
+    .invalid { border-color: #dc3545; }
+    .tick { color: #28a745; font-size: 1.2em; margin-left: 5px; }
+    .error { color: #dc3545; font-size: 0.9em; margin: 0; }
+  </style>
+</head>
+<body>
+  <h2>Admin Registration</h2>
+  <form id="adminRegisterForm" autocomplete="off">
+    <input type="text" name="name" placeholder="Full Name" required />
+    <input type="email" name="email" id="email" placeholder="Email" required />
+    <span id="emailTick"></span>
+    <p class="error" id="emailError"></p>
+    <input type="password" name="password" id="password" placeholder="Password" required />
+    <p class="error" id="passwordError"></p>
+    <input type="password" name="confirm" id="confirm" placeholder="Confirm Password" required />
+    <p class="error" id="confirmError"></p>
+    <input type="text" name="contact" placeholder="Contact Number" required />
+    <button type="submit">Register</button>
+    <a href="/adminlogin.html" style="display:block;margin-top:10px;">Back to Login</a>
+    <a href="#" id="showForgot" style="display:block;text-align:right;font-size:0.9em;">Forgot Password?</a>
+  </form>
+  <form id="forgotForm" style="display:none;">
+    <input type="email" name="email" placeholder="Enter your admin email" required />
+    <button type="submit">Reset Password</button>
+    <p class="error" id="forgotMsg"></p>
+    <a href="#" id="backToRegister" style="display:block;text-align:right;font-size:0.9em;">Back to Register</a>
+  </form>
+  <script>
+    // Email validation
+    const emailInput = document.getElementById('email');
+    const emailTick = document.getElementById('emailTick');
+    const emailError = document.getElementById('emailError');
+    emailInput.addEventListener('input', function() {
+      const val = emailInput.value.trim();
+      const valid = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(val) && !/[^a-zA-Z0-9@._+-]/.test(val);
+      if (valid) {
+        emailInput.classList.add('valid');
+        emailInput.classList.remove('invalid');
+        emailTick.textContent = '✔';
+        emailError.textContent = '';
+      } else {
+        emailInput.classList.remove('valid');
+        emailInput.classList.add('invalid');
+        emailTick.textContent = '';
+        emailError.textContent = 'Invalid email format or contains special characters.';
+      }
+    });
+
+    // Password validation
+    const passwordInput = document.getElementById('password');
+    const passwordError = document.getElementById('passwordError');
+    passwordInput.addEventListener('input', function() {
+      const val = passwordInput.value;
+      if (!/^[a-zA-Z0-9]{8,}$/.test(val)) {
+        passwordInput.classList.add('invalid');
+        passwordError.textContent = 'Password must be at least 8 letters/numbers, no special characters.';
+      } else {
+        passwordInput.classList.remove('invalid');
+        passwordError.textContent = '';
+      }
+    });
+
+    // Confirm password validation
+    const confirmInput = document.getElementById('confirm');
+    const confirmError = document.getElementById('confirmError');
+    confirmInput.addEventListener('input', function() {
+      if (confirmInput.value !== passwordInput.value) {
+        confirmInput.classList.add('invalid');
+        confirmError.textContent = 'Passwords do not match.';
+      } else {
+        confirmInput.classList.remove('invalid');
+        confirmError.textContent = '';
+      }
+    });
+
+    // Submit
+    document.getElementById('adminRegisterForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      if (emailError.textContent || passwordError.textContent || confirmError.textContent) return;
+      const form = e.target;
+      const data = {
+        name: form.name.value.trim(),
+        email: form.email.value.trim(),
+        password: form.password.value,
+        contact: form.contact.value.trim()
+      };
+      const res = await fetch('/adminregister', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify(data)
+      });
+      if (res.redirected) {
+        window.location.href = res.url;
+      } else {
+        alert('Registration failed.');
+      }
+    });
+
+    // Forgot password logic
+    document.getElementById('showForgot').onclick = function(e) {
+      e.preventDefault();
+      document.getElementById('adminRegisterForm').style.display = 'none';
+      document.getElementById('forgotForm').style.display = 'block';
+    };
+    document.getElementById('backToRegister').onclick = function(e) {
+      e.preventDefault();
+      document.getElementById('forgotForm').style.display = 'none';
+      document.getElementById('adminRegisterForm').style.display = 'block';
+    };
+    document.getElementById('forgotForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const email = e.target.email.value.trim();
+      const msg = document.getElementById('forgotMsg');
+      msg.textContent = '';
+      const res = await fetch('/admin-forgot-password', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({email})
+      });
+      const result = await res.json();
+      msg.textContent = result.message || (result.success ? 'Check your email for new password.' : 'Failed.');
+    });
+  </script>
+</body>
+</html>
