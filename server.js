@@ -208,6 +208,51 @@ app.post('/placeorder', async (req, res) => {
   }
 });
 
+// --- NEW: Get orders of a specific user ---
+app.get('/myorders', async (req, res) => {
+  try {
+    const email = req.query.email;
+    if (!email) return res.status(400).json({ message: 'Email required' });
+
+    const orders = await Order.find({ email });
+    res.json(orders);
+  } catch (err) {
+    console.error('Failed to fetch user orders:', err);
+    res.status(500).json({ message: 'Failed to fetch orders' });
+  }
+});
+
+// --- NEW: Delete a user order ---
+app.delete('/orders/:id', async (req, res) => {
+  try {
+    await Order.findByIdAndDelete(req.params.id);
+    res.json({ success: true, message: 'Order deleted successfully' });
+  } catch (err) {
+    console.error('Failed to delete order:', err);
+    res.status(500).json({ message: 'Failed to delete order' });
+  }
+});
+
+// --- NEW: Update a user order ---
+app.put('/orders/:id', async (req, res) => {
+  try {
+    const { quantity, amount } = req.body;
+    if (!quantity || !amount) return res.status(400).json({ message: 'Quantity and amount required' });
+
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+
+    order.quantity = quantity;
+    order.amount = amount;
+    await order.save();
+
+    res.json({ success: true, message: 'Order updated successfully' });
+  } catch (err) {
+    console.error('Failed to update order:', err);
+    res.status(500).json({ message: 'Failed to update order' });
+  }
+});
+
 app.post('/updateadmin', async (req, res) => {
   const { name, email, contact } = req.body;
   try {
@@ -343,6 +388,50 @@ app.delete('/api/customers/:id', async (req, res) => {
     res.status(500).json({ error: 'Failed to delete customer' });
   }
 });
+// Update order quantity and amount
+app.put('/updateorder', async (req, res) => {
+  try {
+    const { orderId, quantity } = req.body;
+    if (!orderId || !quantity || quantity < 1) {
+      return res.status(400).json({ message: 'Invalid orderId or quantity' });
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+
+    order.quantity = quantity;
+    order.amount = order.product ? order.amount / order.quantity * quantity : order.amount; // fallback
+    // More precise recalculation:
+    // Find product price and calculate amount accordingly:
+    const product = await Product.findOne({ name: order.product });
+    if (product) {
+      order.amount = product.amount * quantity;
+    }
+
+    await order.save();
+    res.json({ success: true, message: 'Order updated successfully' });
+  } catch (err) {
+    console.error('Failed to update order:', err);
+    res.status(500).json({ message: 'Failed to update order' });
+  }
+});
+
+// Delete order by id
+app.delete('/deleteorder', async (req, res) => {
+  try {
+    const { orderId } = req.body;
+    if (!orderId) return res.status(400).json({ message: 'orderId is required' });
+
+    const deleted = await Order.findByIdAndDelete(orderId);
+    if (!deleted) return res.status(404).json({ message: 'Order not found' });
+
+    res.json({ success: true, message: 'Order deleted successfully' });
+  } catch (err) {
+    console.error('Failed to delete order:', err);
+    res.status(500).json({ message: 'Failed to delete order' });
+  }
+});
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
